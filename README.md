@@ -1,1 +1,1 @@
-Repository in future will be modificate
+Loggerm - is easy-use logger
