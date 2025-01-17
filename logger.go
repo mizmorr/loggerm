@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -19,10 +20,16 @@ var (
 	once   sync.Once
 )
 
-func Get(logLevel string) *Logger {
+func Get(logPath, logLevel string) *Logger {
+	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
+	if err != nil {
+		return nil
+	}
+	defer file.Close()
 	once.Do(func() {
 		writer := newConsoleWriter()
-		zeroLogger := zerolog.New(writer).With().Logger()
+		multiWriter := io.MultiWriter(writer, file)
+		zeroLogger := zerolog.New(multiWriter).With().Logger()
 		switch logLevel {
 		case "debug":
 			zerolog.SetGlobalLevel(zerolog.DebugLevel)
@@ -45,6 +52,12 @@ func Get(logLevel string) *Logger {
 }
 
 func newConsoleWriter() *zerolog.ConsoleWriter {
+	levelColors := map[zerolog.Level]string{
+		zerolog.InfoLevel:  "\033[34m", // Синий
+		zerolog.WarnLevel:  "\033[33m", // Жёлтый
+		zerolog.ErrorLevel: "\033[31m", // Красный
+		zerolog.DebugLevel: "\033[32m", // Зелёный
+	}
 	writer := zerolog.ConsoleWriter{
 		Out: os.Stderr,
 		// TimeFormat: time.RFC1123,
@@ -61,5 +74,14 @@ func newConsoleWriter() *zerolog.ConsoleWriter {
 			zerolog.TimeFieldFormat,
 		},
 	}
+	writer.FormatLevel = func(i interface{}) string {
+		if l, ok := i.(string); ok {
+			colorLog, _ := zerolog.ParseLevel(l)
+			color := levelColors[colorLog]
+			return color + l + "\033[0m"
+		}
+		return i.(string)
+	}
+
 	return &writer
 }
