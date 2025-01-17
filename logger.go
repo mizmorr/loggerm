@@ -20,11 +20,15 @@ var (
 	once   sync.Once
 )
 
+var path string = ""
+
 func Get(logPath, logLevel string) *Logger {
 	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 	if err != nil {
 		return nil
 	}
+	path = logPath
+
 	defer file.Close()
 	once.Do(func() {
 		writer := newConsoleWriter()
