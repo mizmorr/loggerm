@@ -59,10 +59,13 @@ func Get(logPath, logLevel string) *Logger {
 
 func newWriter(placeToWrite *os.File, isFile bool) *zerolog.ConsoleWriter {
 	levelColors := map[zerolog.Level]string{
+		zerolog.TraceLevel: "\033[37m", // Белый
+		zerolog.DebugLevel: "\033[36m", // Голубой
 		zerolog.InfoLevel:  "\033[34m", // Синий
 		zerolog.WarnLevel:  "\033[33m", // Жёлтый
 		zerolog.ErrorLevel: "\033[31m", // Красный
-		zerolog.DebugLevel: "\033[32m", // Зелёный
+		zerolog.FatalLevel: "\033[35m", // Пурпурный
+		zerolog.PanicLevel: "\033[41m", // Красный фон
 	}
 
 	writer := zerolog.ConsoleWriter{
