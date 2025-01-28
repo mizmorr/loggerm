@@ -30,9 +30,9 @@ func Get(logPath, logLevel string) *Logger {
 		return nil
 	}
 	once.Do(func() {
-		writerToStd := newWriter(os.Stdout)
+		writerToStd := newWriter(os.Stdout, false)
 
-		writerToFile := newWriter(file)
+		writerToFile := newWriter(file, true)
 
 		multiWriter := io.MultiWriter(writerToStd, writerToFile)
 		zeroLogger := zerolog.New(multiWriter).With().Caller().Logger()
@@ -57,7 +57,7 @@ func Get(logPath, logLevel string) *Logger {
 	return &logger
 }
 
-func newWriter(placeToWrite *os.File) *zerolog.ConsoleWriter {
+func newWriter(placeToWrite *os.File, isFile bool) *zerolog.ConsoleWriter {
 	levelColors := map[zerolog.Level]string{
 		zerolog.InfoLevel:  "\033[34m", // Синий
 		zerolog.WarnLevel:  "\033[33m", // Жёлтый
@@ -70,7 +70,7 @@ func newWriter(placeToWrite *os.File) *zerolog.ConsoleWriter {
 
 		FormatLevel: func(i interface{}) string {
 			str := strings.ToUpper(fmt.Sprintf("[%s]", i))
-			if placeToWrite == os.Stdout {
+			if !isFile {
 				if l, ok := i.(string); ok {
 					level, _ := zerolog.ParseLevel(l)
 					color := levelColors[level]
@@ -85,13 +85,11 @@ func newWriter(placeToWrite *os.File) *zerolog.ConsoleWriter {
 		FormatTimestamp: func(i interface{}) string {
 			return fmt.Sprintf("%v |", time.Now().Format(time.RFC822))
 		},
-
-		PartsExclude: []string{
-			zerolog.TimeFieldFormat,
-		},
+		PartsExclude: []string{zerolog.TimeFieldFormat},
 	}
 
-	if placeToWrite != os.Stdout {
+	if isFile {
+		writer.NoColor = true
 		writer.FormatCaller = func(i interface{}) string {
 			return fmt.Sprintf("| %s |", i.(string)) // Кастомизация caller
 		}
